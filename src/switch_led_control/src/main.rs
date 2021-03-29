@@ -2,8 +2,7 @@ use std::error::Error;
 use std::thread;
 use std::time::Duration;
 
-use rppal::gpio::Gpio;
-use rppal::gpio::Level;
+use rppal::gpio::{Gpio, Level, InputPin, OutputPin};
 use rppal::system::DeviceInfo;
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -27,13 +26,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 	while running.load(Ordering::SeqCst) {
 		thread::sleep(Duration::from_millis(10));
-		if switch.read() == Level::High {
-			led.set_high();
-		} else {
-			led.set_low();
-		}
+		pin_output_switch(&switch, &mut led);
 	}
 
 	led.set_low();
 	Ok(())
+}
+
+fn pin_output_switch(input_pin: &InputPin, output_pin: &mut OutputPin) {
+	if input_pin.read() == Level::High {
+		output_pin.set_high();
+	} else {
+		output_pin.set_low();
+	}
 }
