@@ -10,6 +10,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 const GPIO_SWITCH: u8 = 24;
+const GPIO_LED: u8    = 25;
 
 fn main() -> Result<(), Box<dyn Error>> {
 	let running = Arc::new(AtomicBool::new(true));
@@ -22,15 +23,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 	println!("Blinking an Switch Control LED {}", DeviceInfo::new()?.model());
 
 	let switch = Gpio::new()?.get(GPIO_SWITCH)?.into_input();
+	let mut led= Gpio::new()?.get(GPIO_LED)?.into_output();
 
 	while running.load(Ordering::SeqCst) {
-		thread::sleep(Duration::from_millis(500));
+		thread::sleep(Duration::from_millis(10));
 		if switch.read() == Level::High {
-			println!("Switch is ON.");
+			led.set_high();
 		} else {
-			println!("Switch is OFF.");
+			led.set_low();
 		}
 	}
 
+	led.set_low();
 	Ok(())
 }
