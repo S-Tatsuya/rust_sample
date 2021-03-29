@@ -1,8 +1,6 @@
 use std::error::Error;
-use std::thread;
-use std::time::Duration;
 
-use rppal::gpio::{Gpio, Level, InputPin, OutputPin};
+use rppal::gpio::{Gpio, Trigger};
 use rppal::system::DeviceInfo;
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -21,22 +19,31 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 	println!("Blinking an Switch Control LED {}", DeviceInfo::new()?.model());
 
-	let switch = Gpio::new()?.get(GPIO_SWITCH)?.into_input();
+	let mut switch = Gpio::new()?.get(GPIO_SWITCH)?.into_input();
 	let mut led= Gpio::new()?.get(GPIO_LED)?.into_output();
 
+	let r = switch.set_interrupt(Trigger::FallingEdge);
+	match r {
+		Ok(n) => n,
+		Err(e) => println!("Error: {:?}", e),
+	}
+
 	while running.load(Ordering::SeqCst) {
-		thread::sleep(Duration::from_millis(10));
-		pin_output_switch(&switch, &mut led);
+		let level = switch.poll_interrupt(true, None);
+		match level {
+			Ok(_) => led.toggle(),
+			Err(e) => {
+				println!("Error: {:?}", e);
+				break;
+			}
+		}
 	}
 
 	led.set_low();
-	Ok(())
-}
-
-fn pin_output_switch(input_pin: &InputPin, output_pin: &mut OutputPin) {
-	if input_pin.read() == Level::High {
-		output_pin.set_high();
-	} else {
-		output_pin.set_low();
+	let r = switch.clear_interrupt();
+	match r {
+		Ok(n) => n,
+		Err(e) => println!("Error: {:?}", e),
 	}
+	Ok(())
 }
