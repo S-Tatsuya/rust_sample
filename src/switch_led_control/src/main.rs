@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 	println!("Blinking an Switch Control LED {}", DeviceInfo::new()?.model());
 
-	let mut switch = Gpio::new()?.get(GPIO_SWITCH)?.into_input();
+	let mut switch = Gpio::new()?.get(GPIO_SWITCH)?.into_input_pulldown();
 	let mut led= Gpio::new()?.get(GPIO_LED)?.into_output();
 
 	let r = switch.set_interrupt(Trigger::FallingEdge);
